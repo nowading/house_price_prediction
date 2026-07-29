@@ -26,7 +26,7 @@ def test_predict_single():
             "school_rating": 7.6,
         }
     }
-    response = client.post("/api/v1/predict", json=payload)
+    response = client.post("/predict", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert "prediction" in data
@@ -40,7 +40,7 @@ def test_predict_single_missing_field():
             "bedrooms": 3,
         }
     }
-    response = client.post("/api/v1/predict", json=payload)
+    response = client.post("/predict", json=payload)
     assert response.status_code == 422
 
 
@@ -67,7 +67,7 @@ def test_predict_batch():
             },
         ]
     }
-    response = client.post("/api/v1/predict/batch", json=payload)
+    response = client.post("/predict/batch", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
@@ -76,12 +76,12 @@ def test_predict_batch():
 
 def test_predict_batch_empty():
     payload = {"features": []}
-    response = client.post("/api/v1/predict/batch", json=payload)
+    response = client.post("/predict/batch", json=payload)
     assert response.status_code == 400
 
 
 def test_model_info():
-    response = client.get("/api/v1/model-info")
+    response = client.get("/model-info")
     assert response.status_code == 200
     data = response.json()
     assert "model_type" in data
