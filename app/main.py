@@ -1,4 +1,5 @@
 import logging
+import warnings
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,8 @@ from app.routes.predict import router as predict_router
 from app.routes.model_info import router as model_info_router
 from app.routes.health import router as health_router
 from app.services.model import get_model
+
+warnings.filterwarnings("ignore", message=".*feature names.*fitted without feature names.*")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +45,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(predict_router, prefix="/api/v1")
-app.include_router(model_info_router, prefix="/api/v1")
+app.include_router(predict_router)
+app.include_router(model_info_router)
 app.include_router(health_router)
