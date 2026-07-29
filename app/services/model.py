@@ -49,26 +49,32 @@ class HousePriceModel:
         if not self.is_loaded:
             raise RuntimeError("Model is not loaded")
 
-        feature_values = np.array([[features[col] for col in FEATURE_COLUMNS]])
+        feature_df = pd.DataFrame([{col: features[col] for col in FEATURE_COLUMNS}])
 
         if self.scaler:
-            feature_values = self.scaler.transform(feature_values)
+            feature_df = pd.DataFrame(
+                self.scaler.transform(feature_df),
+                columns=FEATURE_COLUMNS,
+            )
 
-        prediction = self.model.predict(feature_values)[0]
+        prediction = self.model.predict(feature_df)[0]
         return round(float(prediction), 2)
 
     def predict_batch(self, features_list: List[Dict[str, Any]]) -> List[float]:
         if not self.is_loaded:
             raise RuntimeError("Model is not loaded")
 
-        feature_values = np.array(
-            [[features[col] for col in FEATURE_COLUMNS] for features in features_list]
+        feature_df = pd.DataFrame(
+            [{col: f[col] for col in FEATURE_COLUMNS} for f in features_list]
         )
 
         if self.scaler:
-            feature_values = self.scaler.transform(feature_values)
+            feature_df = pd.DataFrame(
+                self.scaler.transform(feature_df),
+                columns=FEATURE_COLUMNS,
+            )
 
-        predictions = self.model.predict(feature_values)
+        predictions = self.model.predict(feature_df)
         return [round(float(p), 2) for p in predictions]
 
     def get_model_info(self) -> Dict[str, Any]:
