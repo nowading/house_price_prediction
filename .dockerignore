@@ -11,3 +11,5 @@ __pycache__/
 tests/
 notebooks/
 README.md
+generate_data.py
+train_data/

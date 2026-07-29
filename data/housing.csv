@@ -1,4 +1,4 @@
-﻿id,square_footage,bedrooms,bathrooms,year_built,lot_size,distance_to_city_center,school_rating,price
+id,square_footage,bedrooms,bathrooms,year_built,lot_size,distance_to_city_center,school_rating,price
 1,1250,2,1,1985,5200,3.2,7.1,185000
 2,1850,3,2,1998,7500,5.6,8.2,265000
 3,1420,3,2,1992,6800,2.8,6.9,210000
