@@ -1,3 +1,14 @@
+"""
+Integration tests for the Housing Price Prediction API.
+
+These tests exercise every public endpoint through FastAPI's
+``TestClient``, validating both success paths and error handling
+(422 for missing fields, 400 for empty batch, etc.).
+
+Run with:
+    pytest tests/test_api.py -v
+"""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -7,6 +18,7 @@ client = TestClient(app)
 
 
 def test_health_check():
+    """GET /health — returns 200 with status and model_loaded flag."""
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
@@ -15,6 +27,7 @@ def test_health_check():
 
 
 def test_predict_single():
+    """POST /predict — single property prediction returns 200 with float price."""
     payload = {
         "features": {
             "square_footage": 1550,
@@ -34,6 +47,7 @@ def test_predict_single():
 
 
 def test_predict_single_missing_field():
+    """POST /predict with missing field → Pydantic 422 Unprocessable Entity."""
     payload = {
         "features": {
             "square_footage": 1550,
@@ -45,6 +59,7 @@ def test_predict_single_missing_field():
 
 
 def test_predict_batch():
+    """POST /predict/batch — two predictions returned with correct total."""
     payload = {
         "features": [
             {
@@ -75,12 +90,14 @@ def test_predict_batch():
 
 
 def test_predict_batch_empty():
+    """POST /predict/batch with empty list → HTTP 400 Bad Request."""
     payload = {"features": []}
     response = client.post("/predict/batch", json=payload)
     assert response.status_code == 400
 
 
 def test_model_info():
+    """GET /model-info — returns model_type, coefficients, metrics, excluded_features."""
     response = client.get("/model-info")
     assert response.status_code == 200
     data = response.json()
