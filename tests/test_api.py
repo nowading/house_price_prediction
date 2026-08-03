@@ -292,10 +292,10 @@ def test_predict_batch_all_positive():
 # ---------------------------------------------------------------------------
 
 def test_predict_batch_empty():
-    """POST /predict/batch with empty list → HTTP 400 Bad Request."""
+    """POST /predict/batch with empty list → HTTP 422 (Pydantic min_length=1)."""
     payload = {"features": []}
     response = client.post("/predict/batch", json=payload)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_predict_batch_missing_features_key():

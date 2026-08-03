@@ -35,9 +35,8 @@ class HousePriceModel:
     check the flag before calling predict methods.
 
     Attributes:
-        model: The fitted scikit-learn estimator (e.g. LinearRegression)
-            or our numpy ``SimpleLinearRegression`` fallback.
-        scaler: Optional fitted ``StandardScaler`` or ``SimpleScaler``.
+        model: The fitted scikit-learn estimator (e.g. LinearRegression).
+        scaler: Optional fitted ``StandardScaler``.
         coefficients: Dict mapping feature name → learned weight.
         intercept: Bias term (float).
         metrics: Dict with R², RMSE, MAE from the training evaluation.

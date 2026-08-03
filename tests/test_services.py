@@ -1,5 +1,5 @@
 """
-Unit tests for the service layer — model.py, simple_model.py, config.py.
+Unit tests for the service layer — model.py, config.py.
 
 These tests validate the core business logic in isolation (no HTTP layer),
 covering normal paths, edge cases, error conditions, and singleton
@@ -11,14 +11,11 @@ Run with:
 """
 
 import pickle
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
-from app.services.simple_model import SimpleLinearRegression, SimpleScaler
 from app.utils.config import (
     BASE_DIR,
     DATA_DIR,
@@ -28,152 +25,6 @@ from app.utils.config import (
     MODEL_PATH,
     TARGET_COLUMN,
 )
-
-
-# ---------------------------------------------------------------------------
-# SimpleScaler tests
-# ---------------------------------------------------------------------------
-
-class TestSimpleScaler:
-    """Unit tests for the numpy SimpleScaler."""
-
-    def test_fit_stores_mean_and_std(self):
-        """fit() should compute mean_ and std_ from the training data."""
-        scaler = SimpleScaler()
-        X = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-        scaler.fit(X)
-
-        np.testing.assert_array_almost_equal(scaler.mean_, [3.0, 4.0])
-        np.testing.assert_array_almost_equal(scaler.std_, [np.std([1, 3, 5]), np.std([2, 4, 6])])
-
-    def test_transform_applies_z_score(self):
-        """transform() should return (X - mean) / std."""
-        scaler = SimpleScaler()
-        X = np.array([[1.0], [3.0], [5.0]])
-        scaler.fit(X)
-
-        scaled = scaler.transform(np.array([[3.0]]))
-        # mean=3, std=std of [1,3,5] ≈ 1.633
-        expected = (3.0 - 3.0) / np.std([1, 3, 5])
-        np.testing.assert_almost_equal(scaled[0, 0], expected)
-
-    def test_zero_std_column_handled(self):
-        """Constant columns (std=0) should not cause division-by-zero."""
-        scaler = SimpleScaler()
-        X = np.array([[5.0, 2.0], [5.0, 4.0], [5.0, 6.0]])
-        scaler.fit(X)
-
-        # First column is constant 5.0 → std is replaced with 1.0
-        assert scaler.std_[0] == 1.0
-        # Transform should not raise
-        result = scaler.transform(X)
-        assert not np.any(np.isnan(result))
-
-    def test_fit_returns_self_for_chaining(self):
-        """fit() should return self for method chaining compatibility."""
-        scaler = SimpleScaler()
-        X = np.array([[1.0], [2.0]])
-        result = scaler.fit(X)
-        assert result is scaler
-
-    def test_single_sample_fit(self):
-        """fit() with a single sample — std becomes 0 → replaced with 1.0."""
-        scaler = SimpleScaler()
-        X = np.array([[42.0, 100.0]])
-        scaler.fit(X)
-        assert scaler.std_[0] == 1.0
-        assert scaler.std_[1] == 1.0
-
-    def test_negative_values(self):
-        """Scaling should work with negative values."""
-        scaler = SimpleScaler()
-        X = np.array([[-10.0], [0.0], [10.0]])
-        scaler.fit(X)
-        scaled = scaler.transform(np.array([[0.0]]))
-        # mean=0, std=~8.16 → 0/8.16 ≈ 0
-        assert abs(scaled[0, 0]) < 1e-10
-
-
-# ---------------------------------------------------------------------------
-# SimpleLinearRegression tests
-# ---------------------------------------------------------------------------
-
-class TestSimpleLinearRegression:
-    """Unit tests for the numpy SimpleLinearRegression."""
-
-    def test_fit_stores_coef_and_intercept(self):
-        """fit() should learn non-None coefficients and intercept."""
-        model = SimpleLinearRegression()
-        X = np.array([[1.0], [2.0], [3.0], [4.0]])
-        y = np.array([2.0, 4.0, 6.0, 8.0])  # y = 2x
-        model.fit(X, y)
-
-        assert model.coef_ is not None
-        assert model.intercept_ is not None
-        assert len(model.coef_) == 1
-
-    def test_fit_returns_self(self):
-        """fit() should return self for method chaining."""
-        model = SimpleLinearRegression()
-        result = model.fit(np.array([[1.0]]), np.array([2.0]))
-        assert result is model
-
-    def test_predict_multiple_samples(self):
-        """predict() with multiple rows should return correct shape."""
-        model = SimpleLinearRegression()
-        X = np.array([[1.0], [2.0], [3.0]])
-        y = np.array([2.0, 4.0, 6.0])
-        model.fit(X, y)
-
-        preds = model.predict(np.array([[1.0], [5.0], [10.0]]))
-        assert preds.shape == (3,)
-        assert all(np.isfinite(preds))
-
-    def test_predict_single_sample_2d(self):
-        """predict() with a single 2D row should work."""
-        model = SimpleLinearRegression()
-        X = np.array([[1.0], [2.0], [3.0]])
-        y = np.array([2.0, 4.0, 6.0])
-        model.fit(X, y)
-
-        pred = model.predict(np.array([[5.0]]))
-        assert pred.ndim == 1
-        assert len(pred) == 1
-
-    def test_predict_single_sample_1d(self):
-        """predict() with a 1D array (single feature vector) should auto-reshape."""
-        model = SimpleLinearRegression()
-        X = np.array([[1.0], [2.0], [3.0]])
-        y = np.array([2.0, 4.0, 6.0])
-        model.fit(X, y)
-
-        pred = model.predict(np.array([5.0]))
-        assert pred.ndim == 1
-        assert len(pred) == 1
-
-    def test_perfect_fit(self):
-        """With perfectly linear data, predictions should be near-exact."""
-        model = SimpleLinearRegression()
-        X = np.array([[0.0], [1.0], [2.0], [3.0], [4.0]])
-        y = np.array([10.0, 20.0, 30.0, 40.0, 50.0])  # y = 10 + 10x
-        model.fit(X, y)
-
-        pred = model.predict(np.array([[2.0]]))
-        np.testing.assert_almost_equal(pred[0], 30.0, decimal=5)
-
-    def test_multi_feature(self):
-        """Regression with multiple features should work correctly."""
-        model = SimpleLinearRegression()
-        # y = 3*x1 + 5*x2
-        X = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [2.0, 1.0]])
-        y = np.array([3.0, 5.0, 8.0, 11.0])
-        model.fit(X, y)
-
-        pred = model.predict(np.array([[2.0, 3.0]]))
-        # Expected: 3*2 + 5*3 = 21 (plus small intercept)
-        assert np.isfinite(pred[0])
-        # Check it's close (allowing for numerical noise)
-        assert abs(pred[0] - 21.0) < 1.0
 
 
 # ---------------------------------------------------------------------------

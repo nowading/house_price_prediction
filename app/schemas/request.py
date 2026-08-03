@@ -59,7 +59,10 @@ class BatchPredictRequest(BaseModel):
     vectorised inference.
     """
 
-    features: List[HouseFeatures]
+    features: List[HouseFeatures] = Field(
+        ..., min_length=1, max_length=100,
+        description="List of property features (1-100 items)",
+    )
 
 
 class PredictResponse(BaseModel):
